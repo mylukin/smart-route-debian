@@ -1,0 +1,263 @@
+{
+  "log": {
+    "access": "/var/log/v2ray/access.log",
+    "error": "/var/log/v2ray/error.log",
+    "loglevel": "info"
+  },
+  "inbounds": [
+    {
+      "tag": "wg-in",
+      "listen": "0.0.0.0",
+      "port": 51820,
+      "network": "udp",
+      "protocol": "dokodemo-door",
+      "settings": {
+        "address": "127.0.0.1",
+        "port": 5800,
+        "network": "udp",
+        "userLevel": 0
+      }
+    },
+    {
+      "tag": "dns-in",
+      "port": 5173,
+      "network": "udp",
+      "protocol": "dokodemo-door",
+      "settings": {
+        "address": "8.8.4.4",
+        "port": 53,
+        "network": "udp",
+        "timeout": 0,
+        "followRedirect": false
+      }
+    },
+    {
+      "tag": "tproxy-in",
+      "port": 1080,
+      "protocol": "dokodemo-door",
+      "settings": {
+        "network": "tcp,udp",
+        "followRedirect": true
+      },
+      "streamSettings": {
+        "sockopt": {
+          "tproxy": "tproxy"
+        }
+      },
+      "sniffing": {
+        "enabled": true,
+        "destOverride": ["http", "tls", "quic"],
+        "metadataOnly": false
+      }
+    }
+  ],
+  "outbounds": [
+    {
+      "protocol": "trojan",
+      "settings": {
+        "servers": [
+          {
+            "address": "hk.example.com",
+            "port": 443,
+            "password": "<YOUR_TROJAN_PASSWORD>"
+          }
+        ]
+      },
+      "streamSettings": {
+        "network": "tcp",
+        "security": "tls",
+        "sockopt": {
+          "mark": 255,
+          "tcpFastOpen": true,
+          "tproxy": "tproxy"
+        }
+      },
+      "mux": {
+        "enabled": false,
+        "concurrency": 8
+      },
+      "tag": "hk-proxy"
+    },
+    {
+      "protocol": "trojan",
+      "settings": {
+        "servers": [
+          {
+            "address": "us.example.com",
+            "port": 443,
+            "password": "<YOUR_TROJAN_PASSWORD>"
+          }
+        ]
+      },
+      "streamSettings": {
+        "network": "tcp",
+        "security": "tls",
+        "sockopt": {
+          "mark": 255,
+          "tcpFastOpen": true,
+          "tproxy": "tproxy"
+        }
+      },
+      "mux": {
+        "enabled": false,
+        "concurrency": 8
+      },
+      "tag": "us-proxy"
+    },
+    {
+      "protocol": "freedom",
+      "settings": {
+        "domainStrategy": "UseIP"
+      },
+      "tag": "direct",
+      "streamSettings": {
+        "sockopt": {
+          "mark": 255
+        }
+      }
+    },
+    {
+      "protocol": "blackhole",
+      "settings": {
+        "response": {
+          "type": "none"
+        }
+      },
+      "tag": "blocked"
+    },
+    {
+      "tag": "dns-out",
+      "protocol": "dns",
+      "streamSettings": {
+        "sockopt": {
+          "mark": 255
+        }
+      }
+    }
+  ],
+  "routing": {
+    "domainStrategy": "IPIfNonMatch",
+    "domainMatcher": "mph",
+    "rules": [
+      {
+        "explain": "直连域名",
+        "type": "field",
+        "domain": ["full:hk.example.com", "full:us.example.com"],
+        "outboundTag": "direct"
+      },
+      {
+        "explain": "WireGuard 入站",
+        "type": "field",
+        "network": "udp",
+        "inboundTag": ["wg-in"],
+        "outboundTag": "hk-proxy"
+      },
+      {
+        "explain": "所有 DNS 查询强制代理",
+        "type": "field",
+        "port": 53,
+        "network": "udp,tcp",
+        "outboundTag": "dns-out"
+      },
+      {
+        "explain": "AI相关域名强制美国出站",
+        "type": "field",
+        "domain": [
+          "full:ip.lukin.cn",
+          "domain:ipinfo.io",
+          "domain:openai.com",
+          "domain:chatgpt.com",
+          "domain:statsigapi.net",
+          "domain:auth0.com",
+          "domain:oaistatic.com",
+          "domain:featuregates.org",
+          "domain:ingest.sentry.io",
+          "domain:segment.io",
+          "domain:azurefd.net",
+          "domain:cloudflareinsights.com",
+          "domain:cdn.cloudflare.net",
+          "domain:cloudflare.com",
+          "domain:cloudflaressl.com",
+          "domain:report-uri.com",
+          "domain:intercom.io",
+          "domain:intercomcdn.com",
+          "domain:anthropic.com",
+          "domain:claude.ai",
+          "domain:perplexity.ai",
+          "domain:x.ai"
+        ],
+        "outboundTag": "us-proxy"
+      },
+      {
+        "explain": "直连域名",
+        "type": "field",
+        "domain": ["geosite:private", "geosite:cn"],
+        "outboundTag": "direct"
+      },
+      {
+        "explain": "直连IP",
+        "type": "field",
+        "ip": ["geoip:private", "geoip:cn"],
+        "outboundTag": "direct"
+      },
+      {
+        "explain": "北美、南美，走美国出站",
+        "type": "field",
+        "ip": [
+          "geoip:us",
+          "geoip:ca",
+          "geoip:mx",
+          "geoip:br",
+          "geoip:ar",
+          "geoip:cl",
+          "geoip:pe",
+          "geoip:co",
+          "geoip:ve",
+          "geoip:ec",
+          "geoip:bo",
+          "geoip:py",
+          "geoip:uy"
+        ],
+        "outboundTag": "us-proxy"
+      },
+      {
+        "explain": "默认香港出站",
+        "type": "field",
+        "network": "tcp,udp",
+        "outboundTag": "hk-proxy"
+      }
+    ]
+  },
+  "dns": {
+    "hosts": {
+      "dns.cf": "1.1.1.1",
+      "dns.google": "8.8.8.8",
+      "dns.114": "114.114.114.114"
+    },
+    "servers": [
+      {
+        "explain": "直连域名 走 CF DNS",
+        "address": "1.1.1.1",
+        "port": 53,
+        "domains": ["full:hk.example.com", "full:us.example.com"],
+        "fallbackStrategy": "Disabled"
+      },
+      {
+        "explain": "中国域名 走 114 DNS",
+        "address": "114.114.114.114",
+        "port": 53,
+        "domains": ["geosite:cn"],
+        "expectIPs": ["geoip:cn"]
+      },
+      {
+        "explain": "默认 CF DNS 出站",
+        "address": "1.1.1.1",
+        "port": 53
+      }
+    ],
+    "domainMatcher": "mph",
+    "queryStrategy": "UseIPv4",
+    "fallbackStrategy": "Enabled",
+    "tag": "dns-servers-out"
+  }
+}

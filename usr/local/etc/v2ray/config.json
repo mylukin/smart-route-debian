@@ -1,8 +1,8 @@
 {
   "log": {
-    "access": "/var/log/v2ray/access.log",
+    "access": "",
     "error": "/var/log/v2ray/error.log",
-    "loglevel": "info"
+    "loglevel": "warning"
   },
   "inbounds": [
     {
@@ -24,7 +24,7 @@
       "network": "udp",
       "protocol": "dokodemo-door",
       "settings": {
-        "address": "8.8.4.4",
+        "address": "1.1.1.1",
         "port": 53,
         "network": "udp",
         "timeout": 0,
@@ -47,7 +47,7 @@
       "sniffing": {
         "enabled": true,
         "destOverride": ["http", "tls", "quic"],
-        "metadataOnly": false
+        "metadataOnly": true
       }
     }
   ],
@@ -70,6 +70,11 @@
           "mark": 255,
           "tcpFastOpen": true,
           "tproxy": "tproxy"
+        },
+        "tlsSettings": {
+          "allowInsecure": false,
+          "alpn": ["h2", "http/1.1"],
+          "fingerprint": "chrome"
         }
       },
       "mux": {
@@ -96,6 +101,11 @@
           "mark": 255,
           "tcpFastOpen": true,
           "tproxy": "tproxy"
+        },
+        "tlsSettings": {
+          "allowInsecure": false,
+          "alpn": ["h2", "http/1.1"],
+          "fingerprint": "chrome"
         }
       },
       "mux": {
@@ -137,7 +147,7 @@
   ],
   "routing": {
     "domainStrategy": "IPIfNonMatch",
-    "domainMatcher": "mph",
+    "domainMatcher": "linear",
     "rules": [
       {
         "explain": "直连域名",
@@ -189,15 +199,15 @@
         "outboundTag": "us-proxy"
       },
       {
-        "explain": "直连域名",
-        "type": "field",
-        "domain": ["geosite:private", "geosite:cn"],
-        "outboundTag": "direct"
-      },
-      {
         "explain": "直连IP",
         "type": "field",
         "ip": ["geoip:private", "geoip:cn"],
+        "outboundTag": "direct"
+      },
+      {
+        "explain": "直连域名",
+        "type": "field",
+        "domain": ["geosite:private", "geosite:cn"],
         "outboundTag": "direct"
       },
       {
@@ -232,19 +242,14 @@
     "hosts": {
       "dns.cf": "1.1.1.1",
       "dns.google": "8.8.8.8",
-      "dns.114": "114.114.114.114"
+      "dns.114": "114.114.114.114",
+      "hk.example.com": "直连域名的IP",
+      "us.example.com": "直连域名的IP"
     },
     "servers": [
       {
-        "explain": "直连域名 走 CF DNS",
-        "address": "1.1.1.1",
-        "port": 53,
-        "domains": ["full:hk.example.com", "full:us.example.com"],
-        "fallbackStrategy": "Disabled"
-      },
-      {
-        "explain": "中国域名 走 114 DNS",
-        "address": "114.114.114.114",
+        "explain": "中国域名 走 阿里DNS",
+        "address": "223.5.5.5",
         "port": 53,
         "domains": ["geosite:cn"],
         "expectIPs": ["geoip:cn"]
@@ -255,7 +260,7 @@
         "port": 53
       }
     ],
-    "domainMatcher": "mph",
+    "domainMatcher": "linear",
     "queryStrategy": "UseIPv4",
     "fallbackStrategy": "Enabled",
     "tag": "dns-servers-out"

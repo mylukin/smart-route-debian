@@ -156,6 +156,13 @@
         "outboundTag": "direct"
       },
       {
+        "explain": "所有 DNS 查询强制代理",
+        "type": "field",
+        "port": 53,
+        "network": "udp,tcp",
+        "outboundTag": "dns-out"
+      },
+      {
         "explain": "WireGuard 入站",
         "type": "field",
         "network": "udp",
@@ -163,11 +170,30 @@
         "outboundTag": "hk-proxy"
       },
       {
-        "explain": "所有 DNS 查询强制代理",
+        "explain": "直连IP",
         "type": "field",
-        "port": 53,
-        "network": "udp,tcp",
-        "outboundTag": "dns-out"
+        "ip": ["geoip:private", "geoip:cn"],
+        "outboundTag": "direct"
+      },
+      {
+        "explain": "北美、南美，走美国出站",
+        "type": "field",
+        "ip": [
+          "geoip:us",
+          "geoip:ca",
+          "geoip:mx",
+          "geoip:br",
+          "geoip:ar",
+          "geoip:cl",
+          "geoip:pe",
+          "geoip:co",
+          "geoip:ve",
+          "geoip:ec",
+          "geoip:bo",
+          "geoip:py",
+          "geoip:uy"
+        ],
+        "outboundTag": "us-proxy"
       },
       {
         "explain": "AI相关域名强制美国出站",
@@ -199,36 +225,10 @@
         "outboundTag": "us-proxy"
       },
       {
-        "explain": "直连IP",
-        "type": "field",
-        "ip": ["geoip:private", "geoip:cn"],
-        "outboundTag": "direct"
-      },
-      {
         "explain": "直连域名",
         "type": "field",
         "domain": ["geosite:private", "geosite:cn"],
         "outboundTag": "direct"
-      },
-      {
-        "explain": "北美、南美，走美国出站",
-        "type": "field",
-        "ip": [
-          "geoip:us",
-          "geoip:ca",
-          "geoip:mx",
-          "geoip:br",
-          "geoip:ar",
-          "geoip:cl",
-          "geoip:pe",
-          "geoip:co",
-          "geoip:ve",
-          "geoip:ec",
-          "geoip:bo",
-          "geoip:py",
-          "geoip:uy"
-        ],
-        "outboundTag": "us-proxy"
       },
       {
         "explain": "默认香港出站",
